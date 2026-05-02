@@ -1,0 +1,27 @@
+From 0000000000000000000000000000000000000001 Mon Sep 17 00:00:00 2001
+From: ETNA <etna@example.invalid>
+Date: Mon, 5 May 2014 16:11:00 +0200
+Subject: [PATCH] Fix floor (variant: floor_dangerously_small_negative_7d02b9d)
+
+Hand-crafted from upstream commit 7d02b9d. Modern HEAD already contains
+the fix; reverse-applying this patch installs the original bug, where
+floor of a dangerously-small negative number returns 0 instead of -1.
+---
+ src/Data/Scientific/Internal.hs | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/Data/Scientific/Internal.hs b/src/Data/Scientific/Internal.hs
+index aaaaaaa..bbbbbbb 100644
+--- a/src/Data/Scientific/Internal.hs
++++ b/src/Data/Scientific/Internal.hs
+@@ -558,7 +558,9 @@ instance RealFrac Scientific where
+     -- | @'floor' s@ returns the greatest integer not greater than @s@
+     floor = whenFloating $ \c e ->
+               if dangerouslySmall c e
+-              then 0
++              then if c < 0
++                   then -1
++                   else 0
+               else fromInteger (c `divInteger` magnitude (-e))
+     {-# INLINABLE floor #-}
+

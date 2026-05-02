@@ -1,0 +1,134 @@
+name = "scientific"
+description = "Arbitrary-precision scientific-notation numbers (basvandijk/scientific). Bug fixes mined from upstream history; modern HEAD is the base, each patch reverse-applies a fix to install the original bug. Four PBT backends drive the same property modules: QuickCheck, Hedgehog, Falsify, SmallCheck."
+language = "haskell"
+strategies = ["quickcheck", "hedgehog", "falsify", "smallcheck"]
+crate = "scientific"
+base_commit = "224f38f17d23a8a8b87fd533579df4a3ad7ebb8c"
+
+# ---------------------------------------------------------------------------
+# Variant 1: floor_dangerously_small_negative_7d02b9d
+# ---------------------------------------------------------------------------
+[[tasks]]
+mutations = ["floor_dangerously_small_negative_7d02b9d"]
+
+[tasks.source]
+repo = "https://github.com/basvandijk/scientific"
+commits = ["7d02b9de9d10297be495aa23807457426a9d6163"]
+commit_subjects = ["Fix floor"]
+origin = "internal"
+summary = "RealFrac.floor on a Scientific with a dangerously-small (e <<-limit) negative coefficient must equal -1, not 0. Original commit short-circuited to 0 unconditionally; the fix added a sign check so negative inputs return -1."
+
+[tasks.injection]
+kind = "patch"
+files = ["src/Data/Scientific/Internal.hs"]
+locations = [{ file = "src/Data/Scientific/Internal.hs", line = 559, symbol = "floor" }]
+patch = "patches/floor_dangerously_small_negative_7d02b9d.patch"
+
+[tasks.bug]
+short_name = "floor_dangerously_small_negative"
+invariant = "For any non-zero Scientific s with @-1 < s < 0@, @floor s == -1@."
+how_triggered = "Reverse-applying the patch deletes the @if c < 0 then -1 else 0@ branch, so the dangerouslySmall path always returns 0 — including for negative coefficients where -1 is correct."
+
+[[tasks.tasks]]
+property = "FloorDangerouslySmallNegative"
+witnesses = [
+  { test_fn = "witness_floor_dangerously_small_negative_case_neg_one_e_neg_400", note = "floor (scientific (-1) (-400)) must equal -1" },
+  { test_fn = "witness_floor_dangerously_small_negative_case_neg_seven_e_neg_500", note = "floor (scientific (-7) (-500)) must equal -1" },
+  { test_fn = "witness_floor_dangerously_small_negative_case_pos_one_e_neg_400", note = "floor (scientific 1 (-400)) must equal 0 (sanity)" },
+]
+
+# ---------------------------------------------------------------------------
+# Variant 2: parse_empty_digit_string_b3af22f
+# ---------------------------------------------------------------------------
+[[tasks]]
+mutations = ["parse_empty_digit_string_b3af22f"]
+
+[tasks.source]
+repo = "https://github.com/basvandijk/scientific"
+commits = ["b3af22fc0617581d932bb82c65c0652f0632283d"]
+commit_subjects = ["Fix parsing of empty digit string (#21)"]
+origin = "internal"
+summary = "scientificP must reject any string containing zero decimal digits. The original foldDigits accepted empty input by returning the accumulator z, so parsing \"\" or \".\" succeeded with Scientific 0 0. The fix forces foldDigits to consume at least one decimal character."
+
+[tasks.injection]
+kind = "patch"
+files = ["src/Data/Scientific/Internal.hs"]
+locations = [{ file = "src/Data/Scientific/Internal.hs", line = 921, symbol = "foldDigits" }]
+patch = "patches/parse_empty_digit_string_b3af22f.patch"
+
+[tasks.bug]
+short_name = "parse_empty_digit_string"
+invariant = "readP_to_S scientificP s == [] for any string s that contains no decimal digit."
+how_triggered = "Reverse-applying the patch removes the leading @ReadP.satisfy isDecimal@ from foldDigits, so scientificP accepts \"\", \".\", \"+.\", etc., as valid (zero) inputs."
+
+[[tasks.tasks]]
+property = "ParseEmptyDigitStringRejected"
+witnesses = [
+  { test_fn = "witness_parse_empty_digit_string_rejected_case_empty", note = "scientificP \"\" must produce no successful parse" },
+  { test_fn = "witness_parse_empty_digit_string_rejected_case_dot", note = "scientificP \".\" must produce no successful parse" },
+  { test_fn = "witness_parse_empty_digit_string_rejected_case_plus_dot", note = "scientificP \"+.\" must produce no successful parse" },
+]
+
+# ---------------------------------------------------------------------------
+# Variant 3: reads_unambiguous_8990216
+# ---------------------------------------------------------------------------
+[[tasks]]
+mutations = ["reads_unambiguous_8990216"]
+
+[tasks.source]
+repo = "https://github.com/basvandijk/scientific"
+commits = ["8990216e351c56f8186ca12cffbc09af95238eef"]
+commit_subjects = ["Stop 'reads' from producing ambiguous parses."]
+origin = "internal"
+summary = "scientificP must produce exactly one parse for any string that is a valid integer-followed-by-fraction. The original used 'mplus' between the optional fractional branch and the no-fraction continuation, returning two parses. The fix replaced 'mplus' with the left-biased 'ReadP.<++'."
+
+[tasks.injection]
+kind = "patch"
+files = ["src/Data/Scientific/Internal.hs"]
+locations = [{ file = "src/Data/Scientific/Internal.hs", line = 893, symbol = "scientificP" }]
+patch = "patches/reads_unambiguous_8990216.patch"
+
+[tasks.bug]
+short_name = "reads_unambiguous"
+invariant = "length (readP_to_S scientificP s) == 1 for any string of the form <digits>.<digits>."
+how_triggered = "Reverse-applying the patch swaps the optional-fraction combinator from '<++' (committed choice) back to 'mplus' (non-deterministic), producing two parses for any input with a fractional part — one consuming the fraction, one stopping at the integer."
+
+[[tasks.tasks]]
+property = "ReadsUnambiguous"
+witnesses = [
+  { test_fn = "witness_reads_unambiguous_case_one_dot_zero", note = "readP_to_S scientificP \"1.0\" must be a singleton" },
+  { test_fn = "witness_reads_unambiguous_case_two_dot_five", note = "readP_to_S scientificP \"2.5\" must be a singleton" },
+  { test_fn = "witness_reads_unambiguous_case_long", note = "readP_to_S scientificP \"12345.67890\" must be a singleton" },
+]
+
+# ---------------------------------------------------------------------------
+# Variant 4: from_float_digits_zero_0f28347
+# ---------------------------------------------------------------------------
+[[tasks]]
+mutations = ["from_float_digits_zero_0f28347"]
+
+[tasks.source]
+repo = "https://github.com/basvandijk/scientific"
+commits = ["0f28347b4a3221a741f76a48f18ffb9de961e856"]
+commit_subjects = ["Introduce a special case for 0 in fromFloatDigits"]
+origin = "internal"
+summary = "fromFloatDigits 0 must equal @0 :: Scientific@. The original code went through Numeric.floatToDigits, which returned ([0], 0), and constructed an unnormalized Scientific 0 (-1). Under the structural Eq instance this is /= Scientific 0 0. The fix added a dedicated equation @fromFloatDigits 0 = 0@."
+
+[tasks.injection]
+kind = "patch"
+files = ["src/Data/Scientific/Internal.hs"]
+locations = [{ file = "src/Data/Scientific/Internal.hs", line = 692, symbol = "fromFloatDigits" }]
+patch = "patches/from_float_digits_zero_0f28347.patch"
+
+[tasks.bug]
+short_name = "from_float_digits_zero"
+invariant = "fromFloatDigits (fromIntegral n :: Double) == fromInteger (toInteger n) for every Int n."
+how_triggered = "Reverse-applying the patch removes the @fromFloatDigits 0 = 0@ equation. The fall-through path produces Scientific 0 (-1), which is /= the canonical fromInteger 0 = Scientific 0 0."
+
+[[tasks.tasks]]
+property = "FromFloatDigitsRoundTrip"
+witnesses = [
+  { test_fn = "witness_from_float_digits_round_trip_case_zero", note = "fromFloatDigits (0 :: Double) must equal Scientific 0 0" },
+  { test_fn = "witness_from_float_digits_round_trip_case_one", note = "fromFloatDigits (1 :: Double) must equal Scientific 1 0 (sanity)" },
+  { test_fn = "witness_from_float_digits_round_trip_case_neg_one", note = "fromFloatDigits (-1 :: Double) must equal Scientific (-1) 0 (sanity)" },
+]

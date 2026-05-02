@@ -1,0 +1,13 @@
+diff --git b/src/Data/Scientific/Internal.hs a/src/Data/Scientific/Internal.hs
+index f74e86b..8133de4 100644
+--- b/src/Data/Scientific/Internal.hs
++++ a/src/Data/Scientific/Internal.hs
+@@ -890,7 +890,7 @@ scientificP = do
+     S2 n z1 <- foldDigits stepC (S2 0 0)
+     let s = S3 n z1 0
+     S3 coeff z expnt <- (ReadP.satisfy (== '.') >> foldDigits stepF s)
+-                        `mplus` return s
++                        ReadP.<++ return s
+     let signedCoeff | pos       =   coeff
+                     | otherwise = (-coeff)
+     (ReadP.satisfy isE >>
