@@ -14,3 +14,4 @@ cabal.sandbox.config
 /progress.jsonl
 /dist-newstyle/
 /etna/dist-newstyle/
+/.marauders/

@@ -1,34 +1,34 @@
-diff --git b/src/Data/Scientific/Internal.hs a/src/Data/Scientific/Internal.hs
-index a84ce30..8133de4 100644
---- b/src/Data/Scientific/Internal.hs
-+++ a/src/Data/Scientific/Internal.hs
-@@ -919,15 +919,20 @@ scientificP = do
+diff --git a/src/Data/Scientific/Internal.hs b/src/Data/Scientific/Internal.hs
+index 8133de4..a84ce30 100644
+--- a/src/Data/Scientific/Internal.hs
++++ b/src/Data/Scientific/Internal.hs
+@@ -919,20 +919,15 @@ scientificP = do
                else return (-e)
  
  foldDigits :: (a -> Int -> a) -> a -> ReadP a
--foldDigits f z = ReadP.look >>= go z
--    where
--      go !a [] = return a
--      go !a (c:cs)
--          | isDecimal c = do
--              _ <- ReadP.get
--              let digit = ord c - 48
--              go (f a digit) cs
--          | otherwise = return a
-+foldDigits f z = do
-+    c <- ReadP.satisfy isDecimal
-+    let digit = ord c - 48
-+        a = f z digit
-+
-+    ReadP.look >>= go a
-+  where
-+    go !a [] = return a
-+    go !a (c:cs)
-+        | isDecimal c = do
-+            _ <- ReadP.get
-+            let digit = ord c - 48
-+            go (f a digit) cs
-+        | otherwise = return a
+-foldDigits f z = do
+-    c <- ReadP.satisfy isDecimal
+-    let digit = ord c - 48
+-        a = f z digit
+-
+-    ReadP.look >>= go a
+-  where
+-    go !a [] = return a
+-    go !a (c:cs)
+-        | isDecimal c = do
+-            _ <- ReadP.get
+-            let digit = ord c - 48
+-            go (f a digit) cs
+-        | otherwise = return a
++foldDigits f z = ReadP.look >>= go z
++    where
++      go !a [] = return a
++      go !a (c:cs)
++          | isDecimal c = do
++              _ <- ReadP.get
++              let digit = ord c - 48
++              go (f a digit) cs
++          | otherwise = return a
  
  isDecimal :: Char -> Bool
  isDecimal c = c >= '0' && c <= '9'

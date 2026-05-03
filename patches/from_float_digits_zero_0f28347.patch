@@ -1,14 +1,14 @@
-diff --git b/src/Data/Scientific/Internal.hs a/src/Data/Scientific/Internal.hs
-index f5c3440..8133de4 100644
---- b/src/Data/Scientific/Internal.hs
-+++ a/src/Data/Scientific/Internal.hs
-@@ -690,7 +690,8 @@ magnitude e | e < maxExpt = cachedPow10 e
+diff --git a/src/Data/Scientific/Internal.hs b/src/Data/Scientific/Internal.hs
+index 8133de4..f5c3440 100644
+--- a/src/Data/Scientific/Internal.hs
++++ b/src/Data/Scientific/Internal.hs
+@@ -690,8 +690,7 @@ magnitude e | e < maxExpt = cachedPow10 e
  -- algorithm doesn't know in which direction the short decimal representation
  -- would be rounded and computes more digits
  fromFloatDigits :: (RealFloat a) => a -> Scientific
--fromFloatDigits = positivize fromPositiveRealFloat
-+fromFloatDigits 0  = 0
-+fromFloatDigits rf = positivize fromPositiveRealFloat rf
+-fromFloatDigits 0  = 0
+-fromFloatDigits rf = positivize fromPositiveRealFloat rf
++fromFloatDigits = positivize fromPositiveRealFloat
      where
        fromPositiveRealFloat r = go digits 0 0
          where
